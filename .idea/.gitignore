@@ -1,0 +1,11 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# created by virtualenv automatically
+.idea/*
+*__pycache__*
+.venv/
+venv/
+*.log
+log.log
+.pyc
