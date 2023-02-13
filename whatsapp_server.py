@@ -25,18 +25,21 @@ headers["Authorization"] = f"Bearer {token}"
 
 @app.route("/")
 def whatsapp_echo():
-    return "WhatsApp bot server is ready1!"
+    return "WhatsApp bot server is ready2!"
 
 
 @app.route("/bot", methods=["POST", "GET"])
 def receive_message():
     """Receive a message using the WhatsApp Business API."""
     global to
+    print(f"receive_message trigerd '{request}'")
     try:
         if request.method == "GET":
+            print("Inside receive message with verify token")
             mode = request.args.get("hub.mode")
             challenge = request.args.get("hub.challenge")
             received_token = request.args.get("hub.verify_token")
+
             if mode and received_token:
                 if mode == "subscribe" and received_token == VERIFY_TOKEN:
                     return challenge, 200
@@ -48,13 +51,15 @@ def receive_message():
                 user_msg = request.values.get('Body', '').lower()
                 to = request.values.get('From', '').lower()
                 to = to.split("+")[1]
-                print("receive data from whatsapp webhooks", user_msg, to)
-            except:
+                if '' in [user_msg, to]:
+                    raise Exception("error")
+                print("receive data from whatsapp webhooks",user_msg,to)
+            except Exception:
                 # receive data from postman
                 data = request.get_json()
                 to = data['to']
                 user_msg = data['template']['name']
-                print("receive data from postman", user_msg, to)
+                print("receive data from postman",user_msg,to)
 
             # Do something with the received message
             print("Received message:", user_msg)
@@ -81,9 +86,9 @@ def receive_message():
 def send_response_using_whatsapp_api(message):
     """Send a message using the WhatsApp Business API."""
     try:
-        print(f"Sending response for f{message}")
+        print(f"Sending response for: '{message}'")
         url = f"{FACEBOOK_API_URL}/{PHONE_NUMBER_ID_PROVIDER}/messages"
-        url = f"{WHATS_API_URL}/messages?token={token}"
+
         payload = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -106,10 +111,11 @@ def send_response_using_whatsapp_api(message):
                 }
             }
         }
-
+        print(f"Payload '{payload}'")
+        print(f"Headers '{headers}'")
         response = requests.post(url, json=payload, headers=headers, verify=False)
         if not response.ok:
-            return f"Failed to send message, json : '{payload}'\nresponse: '{response}'"
+            return f"Failed to send message, json : '{payload}'  response: '{response}'"
         return f"Message sent successfully to :'{to}'!"
     except Exception as EX:
         return f"Error send response : '{EX}'"
