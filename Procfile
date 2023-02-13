@@ -1,1 +1,1 @@
-web: gunicorn main:app
+web: gunicorn whatsapp_server:app
