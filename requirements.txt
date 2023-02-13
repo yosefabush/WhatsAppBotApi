@@ -1,6 +1,5 @@
 flask
 requests
 twilio
-pyngrok
 mysql
 pandas
