@@ -6,7 +6,7 @@ import unicodedata
 # from Database import Database
 from flask import Flask, request
 from requests.structures import CaseInsensitiveDict
-
+requests.packages.urllib3.disable_warnings()
 app = Flask(__name__)
 
 token = os.getenv('TOKEN')
