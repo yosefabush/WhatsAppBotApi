@@ -25,7 +25,7 @@ headers["Authorization"] = f"Bearer {token}"
 
 @app.route("/")
 def whatsapp_echo():
-    return "WhatsApp bot server is ready2!"
+    return "WhatsApp bot server is ready3!"
 
 
 @app.route("/bot", methods=["POST", "GET"])
