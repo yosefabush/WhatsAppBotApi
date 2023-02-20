@@ -48,6 +48,7 @@ def receive_message():
         else:
             try:
                 # receive data from whatsapp webhooks
+                print(f"Inside Post method")
                 user_msg = request.values.get('Body', '').lower()
                 to = request.values.get('From', '').lower()
                 to = to.split("+")[1]
