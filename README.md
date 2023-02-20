@@ -5,6 +5,7 @@ description: A minimal server WhatsAppBotApi
 tags:
   - python
   - flask
+  - docker image
 ---
 
 ## How to use
