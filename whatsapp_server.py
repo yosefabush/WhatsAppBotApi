@@ -33,13 +33,13 @@ def receive_message():
     """Receive a message using the WhatsApp Business API."""
     global to
     print(f"receive_message trigerd '{request}'")
+    print(f"method '{request.method}'")
     try:
         if request.method == "GET":
             print("Inside receive message with verify token")
             mode = request.args.get("hub.mode")
             challenge = request.args.get("hub.challenge")
             received_token = request.args.get("hub.verify_token")
-
             if mode and received_token:
                 if mode == "subscribe" and received_token == VERIFY_TOKEN:
                     return challenge, 200
@@ -50,13 +50,18 @@ def receive_message():
                 # receive data from whatsapp webhooks
                 print(f"Inside Post method")
                 user_msg = request.values.get('Body', '').lower()
+                print(f"user_msg {user_msg}")
                 to = request.values.get('From', '').lower()
+                print(f"to1 {to}")
                 to = to.split("+")[1]
+                print(f"to2 {to}")
                 if '' in [user_msg, to]:
+                    print(request.get_json())
                     raise Exception("error")
                 print("receive data from whatsapp webhooks",user_msg,to)
             except Exception:
                 # receive data from postman
+                print(f"postman")
                 data = request.get_json()
                 to = data['to']
                 user_msg = data['template']['name']
