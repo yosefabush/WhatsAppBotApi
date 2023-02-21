@@ -53,10 +53,10 @@ def receive_message():
                 print(f"user_msg {user_msg}")
                 to = request.values.get('From', '').lower()
                 print(f"to1 {to}")
-                to = to.split("+")[1]
+                # to = to.split("+")[1]
                 print(f"to2 {to}")
                 if '' in [user_msg, to]:
-                    print(request.get_json())
+                    # print(request.get_json())
                     raise Exception("error")
                 print("receive data from whatsapp webhooks",user_msg,to)
             except Exception:
