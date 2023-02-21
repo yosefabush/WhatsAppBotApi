@@ -63,7 +63,7 @@ def receive_message():
                 print("receive data from whatsapp webhooks",user_msg,to)
             except Exception as ERR:
                 # receive data from postman
-                print(F"WHATS parse error '{ERR}')
+                print(F"WHATS parse error '{ERR}'")
                 try:
                     print(f"postman")
                     data = request.get_json()
