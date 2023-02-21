@@ -52,20 +52,27 @@ def receive_message():
                 user_msg = request.values.get('Body', '').lower()
                 print(f"user_msg {user_msg}")
                 to = request.values.get('From', '').lower()
-                print(f"to1 {to}")
+                print(f"to1 '{to}'")
                 # to = to.split("+")[1]
-                print(f"to2 {to}")
+                print(f"to2 '{to}'")
+                print(f"values '{request.values}'")
                 if '' in [user_msg, to]:
+                    print(f"Error on parsing '{request.values}'")
                     # print(request.get_json())
-                    raise Exception("error")
+                    raise Exception(f"Empty user msg '{user_msg}' or destination '{to}'")
                 print("receive data from whatsapp webhooks",user_msg,to)
-            except Exception:
+            except Exception as ERR:
                 # receive data from postman
-                print(f"postman")
-                data = request.get_json()
-                to = data['to']
-                user_msg = data['template']['name']
-                print("receive data from postman",user_msg,to)
+                print(F"WHATS parse error '{ERR}')
+                try:
+                    print(f"postman")
+                    data = request.get_json()
+                    to = data['to']
+                    user_msg = data['template']['name']
+                    print("receive data from postman",user_msg,to)
+                except Exception as EX:
+                    print(f"Fatal Error '{EX}'")
+                    raise Exception("Fatal Error")
 
             # Do something with the received message
             print("Received message:", user_msg)
