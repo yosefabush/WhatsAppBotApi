@@ -49,6 +49,7 @@ def receive_message():
             try:
                 # receive data from whatsapp webhooks
                 print(f"Inside Post method")
+                print(f"form: '{request.form}' ")
                 user_msg = request.values.get('Body', '').lower()
                 print(f"user_msg {user_msg}")
                 to = request.values.get('From', '').lower()
