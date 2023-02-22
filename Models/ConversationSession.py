@@ -40,3 +40,9 @@ class ConversationSession:
     def all_validation(self, step):
         # self.conversation_steps[self.call_flow_location]
         return True
+
+    def set_response(self, step, response):
+        if self.all_validation(step):
+            print(self.conversation_steps[step],response)
+        else:
+            print(f"Not valid response {response}")

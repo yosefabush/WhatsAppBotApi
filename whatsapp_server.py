@@ -102,12 +102,13 @@ def receive_message():
                 else:
                     print(send_response_using_whatsapp_api("Unknown msg"))
             else:
-                if 'היי' in user_msg:
-                    print(send_response_using_whatsapp_api("שלום רב!"))
-                elif 'התחל' in user_msg:
-                    chat_whatsapp(user_msg)
-                else:
-                    print(send_response_using_whatsapp_api("אני לומד להציק ללידור הגיי"))
+                chat_whatsapp(user_msg)
+                # if 'היי' in user_msg:
+                #     print(send_response_using_whatsapp_api("שלום רב!"))
+                # elif 'התחל' in user_msg:
+                #     chat_whatsapp(user_msg)
+                # else:
+                #     print(send_response_using_whatsapp_api("אני לומד להציק ללידור הגיי"))
             return str("Done")
     except Exception as ex:
         return f"Something went wrong : '{ex}'"
@@ -166,7 +167,7 @@ def chat_input():
             break
 
 
-def chat_whatsapp(user_msg):
+def chat_whatsapp_old(user_msg):
     # Get the user's name
     user_id = send_response_using_whatsapp_api(f"{conversation_steps['1']}\n")
     session = None
@@ -226,7 +227,63 @@ def chat_whatsapp(user_msg):
         return
 
 
-def send_response_using_whatsapp_api(message, phone_number=PHONE_NUMBER_ID_PROVIDER):
+def chat_whatsapp(user_msg):
+    # Get the user's name
+    global conversation_history
+    session = check_if_session_exist(to)
+    if session is None:
+        print("Hi " + to + " You are new!:")
+        steps_message = ""
+        for key, value in conversation_steps.items():
+            steps_message += f"{value} - {key}\n"
+            print(f"{value} - {key}")
+        send_response_using_whatsapp_api(conversation["Greeting"])
+        send_response_using_whatsapp_api(f"{steps_message}")
+        session = ConversationSession(to)
+        send_response_using_whatsapp_api(conversation_steps[str(session.get_call_flow_location())])
+        session.increment_call_flow()
+        conversation_history.append(session)
+    else:
+        print("Hi " + to + " You are known!:")
+        current_conversation_step = str(session.get_call_flow_location())
+        if current_conversation_step == "3":
+            choices = ["ב", "א"]
+            # Get user input
+            send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n{choices}\n").lower()
+        else:
+            send_response_using_whatsapp_api(conversation_steps[current_conversation_step])
+        session.set_response(current_conversation_step, user_msg)
+        session.increment_call_flow()
+        after_action_conversation_step = str(session.get_call_flow_location())
+        # Check if conversation reach to last step
+        if after_action_conversation_step == str(len(conversation_steps)+1):  # 7
+            session.issue_to_be_created = user_msg
+            send_response_using_whatsapp_api(f"{conversation_steps[after_action_conversation_step]}\n")
+            print(f"recevied message: '{session.issue_to_be_created}'")
+            print("Conversation ends!")
+            return
+
+
+def check_if_session_exist(user_id):
+    print(f"Check check_if_session_exist '{user_id}'")
+    conversation_history_ids = [item.get_user_id() for item in conversation_history]
+    if user_id in conversation_history_ids:
+        session = conversation_history[conversation_history_ids.index(user_id)]
+        diff_time = datetime.now() - session.start_data
+        seconds_in_day = 24 * 60 * 60
+        minutes, second = divmod(diff_time.days * seconds_in_day + diff_time.seconds, 60)
+        if minutes > TIMEOUT_FOR_OPEN_SESSION_MINUTES:
+            print("To much time pass, CREATE NEW SESSION")
+            send_response_using_whatsapp_api("To much time pass, CREATE NEW SESSION")
+            return None
+        else:
+            print("SESSION exist!")
+            return session
+            # send_response_using_whatsapp_api("SESSION is still open!")
+    return None
+
+
+def send_response_using_whatsapp_api(message, phone_number=PHONE_NUMBER_ID_PROVIDER, debug=False):
     """Send a message using the WhatsApp Business API."""
     try:
         print(f"Sending message: '{message}' ")
@@ -254,9 +311,10 @@ def send_response_using_whatsapp_api(message, phone_number=PHONE_NUMBER_ID_PROVI
                 }
             }
         }
-        print(f"Payload '{payload}' ")
-        print(f"Headers '{headers}' ")
-        print(f"URL '{url}' ")
+        if debug:
+            print(f"Payload '{payload}' ")
+            print(f"Headers '{headers}' ")
+            print(f"URL '{url}' ")
         response = requests.post(url, json=payload, headers=headers, verify=False)
         if not response.ok:
             return f"Failed send message, response: '{response}'"
@@ -273,7 +331,7 @@ def webhook_parsing_message_and_destination():
     try:
         if res['entry'][0]['changes'][0]['value']['messages'][0]['id']:
             to = res['entry'][0]['changes'][0]['value']['messages'][0]['from']
-            print("phone_number",res['entry'][0]['changes'][0]['value']['metadata']['phone_number_id'])
+            print("phone_number", res['entry'][0]['changes'][0]['value']['metadata']['phone_number_id'])
             return res['entry'][0]['changes'][0]['value']['messages'][0]['text']["body"]
     except:
         pass
