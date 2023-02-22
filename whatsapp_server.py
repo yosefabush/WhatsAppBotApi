@@ -104,9 +104,10 @@ def receive_message():
                     print("receive data from postman", user_msg, to)
                 except Exception as EX:
                     print(f"webhook")
-                    webhook()
-                    print(f"Fatal Error '{EX}'")
-                    raise Exception("Fatal Error")
+                    user_msg = webhook()
+                    if user_msg is None:
+                        print(f"Fatal Error '{EX}'")
+                        raise Exception("Fatal Error")
 
             # Do something with the received message
             print("Received message:", user_msg)
@@ -346,16 +347,18 @@ def send_response_using_whatsapp_api(message):
 
 
 def webhook():
+    global to
     print(request)
     res = request.get_json()
     print(res)
     try:
         if res['entry'][0]['changes'][0]['value']['messages'][0]['id']:
-            send_response_using_whatsapp_api("Thank you for the response.")
+            to = res['entry'][0]['changes'][0]['value']['messages'][0]['from']
+            # send_response_using_whatsapp_api("Thank you for the response.")
+            return res['entry'][0]['changes'][0]['value']['messages'][0]['text']["body"]
     except:
         print("Error on webhook()")
-        pass
-    return '200 OK HTTPS.'
+    return None
 
 
 def verify_token(req):
