@@ -31,7 +31,7 @@ headers["Authorization"] = f"Bearer {TOKEN}"
 session_open = False
 
 conversation = {
-    "Greeting": "Hi I'm ChatBot. Here are the conversation steps to follow:"
+    "Greeting": "ברוך הבא לבוט של מוזס!"
 }
 
 # Define a list of predefined conversation steps
@@ -238,7 +238,7 @@ def chat_whatsapp(user_msg):
             steps_message += f"{value} - {key}\n"
             print(f"{value} - {key}")
         send_response_using_whatsapp_api(conversation["Greeting"])
-        send_response_using_whatsapp_api(f"{steps_message}")
+        print(f"{steps_message}")
         session = ConversationSession(to)
         send_response_using_whatsapp_api(conversation_steps[str(session.get_call_flow_location())])
         session.increment_call_flow()
