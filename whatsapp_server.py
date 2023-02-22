@@ -245,7 +245,8 @@ def chat_whatsapp(user_msg):
         conversation_history.append(session)
     else:
         if session.get_call_flow_location() == 8:
-            print(f"already END! please wait: '{TIMEOUT_FOR_OPEN_SESSION_MINUTES}' minutes")
+            print(f"already END! please wait: '{TIMEOUT_FOR_OPEN_SESSION_MINUTES + 1}' minutes")
+            send_response_using_whatsapp_api(f" השירות יהיה זמין בעוד {TIMEOUT_FOR_OPEN_SESSION_MINUTES + 1} דקות ")
             return
         print("Hi " + to + " You are known!:")
         current_conversation_step = str(session.get_call_flow_location())
