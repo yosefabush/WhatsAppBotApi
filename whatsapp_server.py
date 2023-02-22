@@ -265,24 +265,26 @@ def chat_whatsapp(user_msg):
             send_response_using_whatsapp_api(f"{conversation_steps[after_action_conversation_step]}\n")
             print(f"recevied message: '{session.issue_to_be_created}'")
             print("Conversation ends!")
+            session.session_active = False
             return
 
 
 def check_if_session_exist(user_id):
     print(f"Check check_if_session_exist '{user_id}'")
-    conversation_history_ids = [item.get_user_id() for item in conversation_history]
+    conversation_history_ids = [item.get_user_id() for item in conversation_history if item.session_active is True]
     if user_id in conversation_history_ids:
-        session = conversation_history[conversation_history_ids.index(user_id)]
+        session_index = conversation_history_ids.index(user_id)
+        session = conversation_history[session_index]
         diff_time = datetime.now() - session.start_data
         seconds_in_day = 24 * 60 * 60
         minutes, second = divmod(diff_time.days * seconds_in_day + diff_time.seconds, 60)
         if minutes > TIMEOUT_FOR_OPEN_SESSION_MINUTES:
             print("Restart SESSION")
+            # print(f"Remove: {conversation_history.pop(session_index)}")
             return None
         else:
             print("SESSION exist!")
             return session
-            # send_response_using_whatsapp_api("SESSION is still open!")
     return None
 
 

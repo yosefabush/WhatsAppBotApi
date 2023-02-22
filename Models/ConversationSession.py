@@ -19,6 +19,7 @@ class ConversationSession:
         self.call_flow_location = 1
         self.issue_to_be_created = None
         self.start_data = datetime.now()
+        self.session_active = True
 
     def increment_call_flow(self):
         self.call_flow_location += 1
