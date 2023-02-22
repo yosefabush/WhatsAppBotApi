@@ -16,9 +16,11 @@ PORT = os.getenv("PORT", default=5000)
 TOKEN = os.getenv('TOKEN', default=None)
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", default=None)
 PHONE_NUMBER_ID_PROVIDER = os.getenv("NUMBER_ID_PROVIDER", default=None)
-FACEBOOK_API_URL = 'https://graph.facebook.com/v15.0'
+FACEBOOK_API_URL = 'https://graph.facebook.com/v16.0'
 WHATS_API_URL = 'https://api.whatsapp.com/v3'
 TIMEOUT_FOR_OPEN_SESSION_MINUTES = 10
+if None in [TOKEN, VERIFY_TOKEN, PHONE_NUMBER_ID_PROVIDER]:
+    raise Exception(f"Error on env var '{TOKEN,VERIFY_TOKEN,PHONE_NUMBER_ID_PROVIDER}' ")
 # db = Database()
 to = None
 language_support = {"he": "he_IL", "en": "en_US"}
@@ -65,7 +67,8 @@ def receive_message():
     print(f"method '{request.method}'")
     try:
         if request.method == "GET":
-            print("Inside receive message with verify token")
+            print("Inside GET verify token!")
+            # return verify_token(request)
             mode = request.args.get("hub.mode")
             challenge = request.args.get("hub.challenge")
             received_token = request.args.get("hub.verify_token")
@@ -77,7 +80,7 @@ def receive_message():
         else:
             try:
                 # receive data from whatsapp webhooks
-                print(f"Inside Post method")
+                print(f"Inside Post method!")
                 print(f"form: '{request.form}' ")
                 user_msg = request.values.get('Body', '').lower()
                 print(f"user_msg {user_msg}")
@@ -88,7 +91,6 @@ def receive_message():
                 print(f"values '{request.values}'")
                 if '' in [user_msg, to]:
                     print(f"Error on parsing '{request.values}'")
-                    # print(request.get_json())
                     raise Exception(f"Empty user msg '{user_msg}' or destination '{to}'")
                 print("receive data from whatsapp webhooks", user_msg, to)
             except Exception as ERR:
@@ -101,6 +103,8 @@ def receive_message():
                     user_msg = data['template']['name']
                     print("receive data from postman", user_msg, to)
                 except Exception as EX:
+                    print(f"webhook")
+                    webhook()
                     print(f"Fatal Error '{EX}'")
                     raise Exception("Fatal Error")
 
@@ -335,9 +339,31 @@ def send_response_using_whatsapp_api(message):
         response = requests.post(url, json=payload, headers=headers, verify=False)
         if not response.ok:
             return f"Failed to send message, json : '{payload}'  response: '{response}'"
+        print(f"Message sent successfully to :'{to}'!")
         return f"Message sent successfully to :'{to}'!"
     except Exception as EX:
         return f"Error send response : '{EX}'"
+
+
+def webhook():
+    print(request)
+    res = request.get_json()
+    print(res)
+    try:
+        if res['entry'][0]['changes'][0]['value']['messages'][0]['id']:
+            send_response_using_whatsapp_api("Thank you for the response.")
+    except:
+        print("Error on webhook()")
+        pass
+    return '200 OK HTTPS.'
+
+
+def verify_token(req):
+    if req.args.get("hub.mode") == "subscribe" and req.args.get("hub.challenge"):
+        if not req.args.get("hub.verify_token") == VERIFY_TOKEN:
+            return "Verification token missmatch", 403
+        return req.args['hub.challenge'], 200
+    return "Hello world", 200
 
 
 if __name__ == "__main__":
