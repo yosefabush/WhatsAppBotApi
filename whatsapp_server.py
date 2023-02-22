@@ -15,12 +15,12 @@ app = Flask(__name__)
 PORT = os.getenv("PORT", default=5000)
 TOKEN = os.getenv('TOKEN', default=None)
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", default=None)
-PHONE_NUMBER_ID_PROVIDER = os.getenv("NUMBER_ID_PROVIDER", default=None)
+PHONE_NUMBER_ID_PROVIDER = os.getenv("NUMBER_ID_PROVIDER", default="104091002619024")
 FACEBOOK_API_URL = 'https://graph.facebook.com/v16.0'
 WHATS_API_URL = 'https://api.whatsapp.com/v3'
 TIMEOUT_FOR_OPEN_SESSION_MINUTES = 10
-if None in [TOKEN, VERIFY_TOKEN, PHONE_NUMBER_ID_PROVIDER]:
-    raise Exception(f"Error on env var '{TOKEN,VERIFY_TOKEN,PHONE_NUMBER_ID_PROVIDER}' ")
+if None in [TOKEN, VERIFY_TOKEN]:
+    raise Exception(f"Error on env var '{TOKEN, VERIFY_TOKEN}' ")
 # db = Database()
 to = None
 language_support = {"he": "he_IL", "en": "en_US"}
@@ -28,6 +28,7 @@ language_support = {"he": "he_IL", "en": "en_US"}
 headers = CaseInsensitiveDict()
 headers["Accept"] = "application/json"
 headers["Authorization"] = f"Bearer {TOKEN}"
+session_open = False
 
 conversation = {
     "Greeting": "Hi I'm ChatBot. Here are the conversation steps to follow:"
@@ -68,7 +69,6 @@ def receive_message():
     try:
         if request.method == "GET":
             print("Inside GET verify token!")
-            # return verify_token(request)
             mode = request.args.get("hub.mode")
             challenge = request.args.get("hub.challenge")
             received_token = request.args.get("hub.verify_token")
@@ -79,38 +79,17 @@ def receive_message():
                     return "", 403
         else:
             try:
-                # receive data from whatsapp webhooks
-                print(f"Inside Post method!")
-                print(f"form: '{request.form}' ")
-                user_msg = request.values.get('Body', '').lower()
-                print(f"user_msg {user_msg}")
-                to = request.values.get('From', '').lower()
-                print(f"to1 '{to}'")
-                # to = to.split("+")[1]
-                print(f"to2 '{to}'")
-                print(f"values '{request.values}'")
-                if '' in [user_msg, to]:
-                    print(f"Error on parsing '{request.values}'")
-                    raise Exception(f"Empty user msg '{user_msg}' or destination '{to}'")
-                print("receive data from whatsapp webhooks", user_msg, to)
+                print(f"webhook")
+                user_msg = webhook_parsing_message_and_destination()
+                if user_msg is None:
+                    raise Exception("Read data from Whatsapp message failed")
             except Exception as ERR:
                 # receive data from postman
-                print(F"WHATS parse error '{ERR}'")
-                try:
-                    print(f"postman")
-                    data = request.get_json()
-                    to = data['to']
-                    user_msg = data['template']['name']
-                    print("receive data from postman", user_msg, to)
-                except Exception as EX:
-                    print(f"webhook")
-                    user_msg = webhook()
-                    if user_msg is None:
-                        print(f"Fatal Error '{EX}'")
-                        raise Exception("Fatal Error")
+                print(f"webhook parse error '{ERR}'")
+                raise Exception(f"webhook parse error '{ERR}'")
 
             # Do something with the received message
-            print("Received message:", user_msg)
+            print(f"Received message: {user_msg}")
 
             _language = "en" if 'HEBREW' not in unicodedata.name(user_msg.strip()[0]) else "he"
             print(_language)
@@ -124,6 +103,8 @@ def receive_message():
             else:
                 if 'היי' in user_msg:
                     print(send_response_using_whatsapp_api("שלום רב!"))
+                elif 'התחל' in user_msg:
+                    chat_whatsapp(user_msg)
                 else:
                     print(send_response_using_whatsapp_api("אני לומד להציק ללידור הגיי"))
             return str("Done")
@@ -131,69 +112,6 @@ def receive_message():
         return f"Something went wrong : '{ex}'"
 
 
-@app.route("/botTest", methods=["POST", "GET"])
-def receive_message_new():
-    """Receive a message using the WhatsApp Business API."""
-    global to
-    print(f"receive_message trigger '{request}'")
-    print(f"method '{request.method}'")
-    try:
-        if request.method == "GET":
-            print("Inside receive message with verify token")
-            mode = request.args.get("hub.mode")
-            challenge = request.args.get("hub.challenge")
-            received_token = request.args.get("hub.verify_token")
-            if mode and received_token:
-                if mode == "subscribe" and received_token == VERIFY_TOKEN:
-                    return challenge, 200
-                else:
-                    return "", 403
-        else:
-            try:
-                # receive data from whatsapp webhooks
-                print(f"Inside Post method")
-                user_msg = request.values.get('Body', '').lower()
-                print(f"user_msg {user_msg}")
-                to = request.values.get('From', '').lower()
-                print(f"to1 {to}")
-                to = to.split("+")[1]
-                print(f"to2 {to}")
-                if '' in [user_msg, to]:
-                    print(request.get_json())
-                    raise Exception("error")
-                print("receive data from whatsapp webhooks", user_msg, to)
-            except Exception:
-                # receive data from postman
-                print(f"postman")
-                data = request.get_json()
-                to = data['to']
-                user_msg = data['template']['name']
-                print("receive data from postman", user_msg, to)
-
-            # Do something with the received message
-            print("Received message:", user_msg)
-
-            _language = "en" if 'HEBREW' not in unicodedata.name(user_msg.strip()[0]) else "he"
-            print(_language)
-            if _language == "en":
-                if 'hello' in user_msg:
-                    print(send_response_using_whatsapp_api('Hi There!'))
-                elif 'where' in user_msg:
-                    print(send_response_using_whatsapp_api("Go to: http://google.com"))
-                else:
-                    print(send_response_using_whatsapp_api("Unknown msg"))
-            else:
-                chat_whatsapp(user_msg)
-                # if 'היי' in user_msg:
-                #     print(send_response_using_whatsapp_api("שלום רב!"))
-                # else:
-                #     print(send_response_using_whatsapp_api("אני לומד להציק ללידור הגיי"))
-            return str("Done")
-    except Exception as ex:
-        return f"Something went wrong : '{ex}'"
-
-
-# Define a function to handle user input and provide responses
 def chat_input():
     # Print a greeting message and the predefined conversation steps
     print(conversation["Greeting"])
@@ -307,7 +225,7 @@ def chat_whatsapp(user_msg):
         return
 
 
-def send_response_using_whatsapp_api(message):
+def send_response_using_whatsapp_api(message, phone_number=PHONE_NUMBER_ID_PROVIDER):
     """Send a message using the WhatsApp Business API."""
     try:
         print(f"Sending response for: '{message}'")
@@ -346,7 +264,7 @@ def send_response_using_whatsapp_api(message):
         return f"Error send response : '{EX}'"
 
 
-def webhook():
+def webhook_parsing_message_and_destination():
     global to
     print(request)
     res = request.get_json()
@@ -354,19 +272,153 @@ def webhook():
     try:
         if res['entry'][0]['changes'][0]['value']['messages'][0]['id']:
             to = res['entry'][0]['changes'][0]['value']['messages'][0]['from']
-            # send_response_using_whatsapp_api("Thank you for the response.")
+            print("phone_number",res['entry'][0]['changes'][0]['value']['metadata']['phone_number_id'])
             return res['entry'][0]['changes'][0]['value']['messages'][0]['text']["body"]
     except:
-        print("Error on webhook()")
+        pass
     return None
 
 
 def verify_token(req):
+    # /bot?hub.mode=subscribe&hub.challenge=331028360&hub.verify_token=WHATSAPP_VERIFY_TOKEN
     if req.args.get("hub.mode") == "subscribe" and req.args.get("hub.challenge"):
         if not req.args.get("hub.verify_token") == VERIFY_TOKEN:
             return "Verification token missmatch", 403
         return req.args['hub.challenge'], 200
     return "Hello world", 200
+
+
+@app.route("/botTest", methods=["POST", "GET"])
+def receive_message_chat_whatsapp():
+    """Receive a message using the WhatsApp Business API."""
+    global to
+    print(f"receive_message trigger '{request}'")
+    print(f"method '{request.method}'")
+    try:
+        if request.method == "GET":
+            print("Inside receive message with verify token")
+            mode = request.args.get("hub.mode")
+            challenge = request.args.get("hub.challenge")
+            received_token = request.args.get("hub.verify_token")
+            if mode and received_token:
+                if mode == "subscribe" and received_token == VERIFY_TOKEN:
+                    return challenge, 200
+                else:
+                    return "", 403
+        else:
+            try:
+                # receive data from whatsapp webhooks
+                print(f"Inside Post method")
+                user_msg = request.values.get('Body', '').lower()
+                print(f"user_msg {user_msg}")
+                to = request.values.get('From', '').lower()
+                print(f"to1 {to}")
+                to = to.split("+")[1]
+                print(f"to2 {to}")
+                if '' in [user_msg, to]:
+                    print(request.get_json())
+                    raise Exception("error")
+                print("receive data from whatsapp webhooks", user_msg, to)
+            except Exception:
+                # receive data from postman
+                print(f"postman")
+                data = request.get_json()
+                to = data['to']
+                user_msg = data['template']['name']
+                print("receive data from postman", user_msg, to)
+
+            # Do something with the received message
+            print("Received message:", user_msg)
+
+            _language = "en" if 'HEBREW' not in unicodedata.name(user_msg.strip()[0]) else "he"
+            print(_language)
+            if _language == "en":
+                if 'hello' in user_msg:
+                    print(send_response_using_whatsapp_api('Hi There!'))
+                elif 'where' in user_msg:
+                    print(send_response_using_whatsapp_api("Go to: http://google.com"))
+                else:
+                    print(send_response_using_whatsapp_api("Unknown msg"))
+            else:
+                chat_whatsapp(user_msg)
+                # if 'היי' in user_msg:
+                #     print(send_response_using_whatsapp_api("שלום רב!"))
+                # else:
+                #     print(send_response_using_whatsapp_api("אני לומד להציק ללידור הגיי"))
+            return str("Done")
+    except Exception as ex:
+        return f"Something went wrong : '{ex}'"
+
+
+def receive_message_for_twilio_and_postman():
+    """Receive a message using the WhatsApp Business API."""
+    global to
+    print(f"receive_message trigger '{request}'")
+    print(f"method '{request.method}'")
+    try:
+        if request.method == "GET":
+            print("Inside GET verify token!")
+            # return verify_token(request)
+            mode = request.args.get("hub.mode")
+            challenge = request.args.get("hub.challenge")
+            received_token = request.args.get("hub.verify_token")
+            if mode and received_token:
+                if mode == "subscribe" and received_token == VERIFY_TOKEN:
+                    return challenge, 200
+                else:
+                    return "", 403
+        else:
+            try:
+                # receive data from whatsapp webhooks
+                print(f"Inside Post method!")
+                print(f"form: '{request.form}' ")
+                user_msg = request.values.get('Body', '').lower()
+                print(f"user_msg {user_msg}")
+                to = request.values.get('From', '').lower()
+                print(f"to1 '{to}'")
+                # to = to.split("+")[1]
+                print(f"to2 '{to}'")
+                print(f"values '{request.values}'")
+                if '' in [user_msg, to]:
+                    print(f"Error on parsing '{request.values}'")
+                    raise Exception(f"Empty user msg '{user_msg}' or destination '{to}'")
+                print("receive data from whatsapp webhooks", user_msg, to)
+            except Exception as ERR:
+                # receive data from postman
+                print(F"WHATS parse error '{ERR}'")
+                try:
+                    print(f"postman")
+                    data = request.get_json()
+                    to = data['to']
+                    user_msg = data['template']['name']
+                    print("receive data from postman", user_msg, to)
+                except Exception as EX:
+                    print(f"webhook")
+                    user_msg = webhook_parsing_message_and_destination()
+                    if user_msg is None:
+                        print(f"Fatal Error '{EX}'")
+                        raise Exception("Fatal Error")
+
+            # Do something with the received message
+            print("Received message:", user_msg)
+
+            _language = "en" if 'HEBREW' not in unicodedata.name(user_msg.strip()[0]) else "he"
+            print(_language)
+            if _language == "en":
+                if 'hello' in user_msg:
+                    print(send_response_using_whatsapp_api('Hi There!'))
+                elif 'where' in user_msg:
+                    print(send_response_using_whatsapp_api("Go to: http://google.com"))
+                else:
+                    print(send_response_using_whatsapp_api("Unknown msg"))
+            else:
+                if 'היי' in user_msg:
+                    print(send_response_using_whatsapp_api("שלום רב!"))
+                else:
+                    print(send_response_using_whatsapp_api("אני לומד להציק ללידור הגיי"))
+            return str("Done")
+    except Exception as ex:
+        return f"Something went wrong : '{ex}'"
 
 
 if __name__ == "__main__":
