@@ -16,7 +16,7 @@ PORT = os.getenv("PORT", default=5000)
 TOKEN = os.getenv('TOKEN', default=None)
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", default=None)
 PHONE_NUMBER_ID_PROVIDER = os.getenv("NUMBER_ID_PROVIDER", default="104091002619024")
-FACEBOOK_API_URL = 'https://graph.facebook.com/v16.0'
+FACEBOOK_API_URL = 'https://graph.facebook.com/v15.0'
 WHATS_API_URL = 'https://api.whatsapp.com/v3'
 TIMEOUT_FOR_OPEN_SESSION_MINUTES = 10
 if None in [TOKEN, VERIFY_TOKEN]:
@@ -64,7 +64,7 @@ def whatsapp_echo():
 def receive_message():
     """Receive a message using the WhatsApp Business API."""
     global to
-    print(f"receive_message trigger '{request}'")
+    print(f"receive_message /bot trigger '{request}'")
     print(f"method '{request.method}'")
     try:
         if request.method == "GET":
@@ -74,6 +74,7 @@ def receive_message():
             received_token = request.args.get("hub.verify_token")
             if mode and received_token:
                 if mode == "subscribe" and received_token == VERIFY_TOKEN:
+                    print("Token Verified successfully")
                     return challenge, 200
                 else:
                     return "", 403
@@ -92,7 +93,7 @@ def receive_message():
             print(f"Received message: {user_msg}")
 
             _language = "en" if 'HEBREW' not in unicodedata.name(user_msg.strip()[0]) else "he"
-            print(_language)
+            # print(_language)
             if _language == "en":
                 if 'hello' in user_msg:
                     print(send_response_using_whatsapp_api('Hi There!'))
@@ -228,7 +229,7 @@ def chat_whatsapp(user_msg):
 def send_response_using_whatsapp_api(message, phone_number=PHONE_NUMBER_ID_PROVIDER):
     """Send a message using the WhatsApp Business API."""
     try:
-        print(f"Sending response for: '{message}'")
+        print(f"Sending message: '{message}' ")
         url = f"{FACEBOOK_API_URL}/{PHONE_NUMBER_ID_PROVIDER}/messages"
 
         payload = {
@@ -253,12 +254,12 @@ def send_response_using_whatsapp_api(message, phone_number=PHONE_NUMBER_ID_PROVI
                 }
             }
         }
-        print(f"Payload '{payload}'")
-        print(f"Headers '{headers}'")
+        print(f"Payload '{payload}' ")
+        print(f"Headers '{headers}' ")
+        print(f"URL '{url}' ")
         response = requests.post(url, json=payload, headers=headers, verify=False)
         if not response.ok:
-            return f"Failed to send message, json : '{payload}'  response: '{response}'"
-        print(f"Message sent successfully to :'{to}'!")
+            return f"Failed send message, response: '{response}'"
         return f"Message sent successfully to :'{to}'!"
     except Exception as EX:
         return f"Error send response : '{EX}'"
@@ -292,7 +293,7 @@ def verify_token(req):
 def receive_message_chat_whatsapp():
     """Receive a message using the WhatsApp Business API."""
     global to
-    print(f"receive_message trigger '{request}'")
+    print(f"receive_message botTest trigger '{request}'")
     print(f"method '{request.method}'")
     try:
         if request.method == "GET":
