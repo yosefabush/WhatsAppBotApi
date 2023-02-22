@@ -18,7 +18,7 @@ VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", default=None)
 PHONE_NUMBER_ID_PROVIDER = os.getenv("NUMBER_ID_PROVIDER", default="104091002619024")
 FACEBOOK_API_URL = 'https://graph.facebook.com/v15.0'
 WHATS_API_URL = 'https://api.whatsapp.com/v3'
-TIMEOUT_FOR_OPEN_SESSION_MINUTES = 10
+TIMEOUT_FOR_OPEN_SESSION_MINUTES = 1
 if None in [TOKEN, VERIFY_TOKEN]:
     raise Exception(f"Error on env var '{TOKEN, VERIFY_TOKEN}' ")
 # db = Database()
@@ -244,6 +244,9 @@ def chat_whatsapp(user_msg):
         session.increment_call_flow()
         conversation_history.append(session)
     else:
+        if session.get_call_flow_location() == 8:
+            print(f"already END! please wait: '{TIMEOUT_FOR_OPEN_SESSION_MINUTES}' minutes")
+            return
         print("Hi " + to + " You are known!:")
         current_conversation_step = str(session.get_call_flow_location())
         if current_conversation_step == "3":
@@ -273,8 +276,7 @@ def check_if_session_exist(user_id):
         seconds_in_day = 24 * 60 * 60
         minutes, second = divmod(diff_time.days * seconds_in_day + diff_time.seconds, 60)
         if minutes > TIMEOUT_FOR_OPEN_SESSION_MINUTES:
-            print("To much time pass, CREATE NEW SESSION")
-            send_response_using_whatsapp_api("To much time pass, CREATE NEW SESSION")
+            print("Restart SESSION")
             return None
         else:
             print("SESSION exist!")
