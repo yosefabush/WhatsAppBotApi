@@ -167,8 +167,9 @@ def chat_whatsapp(user_msg):
     log = ""
     if user_msg in ["אדמין"]:
         for s in conversation_history:
-            log += str(s.conversation_steps_response)+"\n"
+            log += str(s.conversation_steps_response)+" status: "+str(s.session_active) + "\n"
         send_response_using_whatsapp_api(log)
+        return
     session = check_if_session_exist(to)
     if session is None:
         print("Hi " + to + " You are new!:")
