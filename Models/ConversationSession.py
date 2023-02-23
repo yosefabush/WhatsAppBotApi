@@ -1,4 +1,5 @@
 from datetime import datetime
+from pprint import pprint
 
 
 class ConversationSession:
@@ -6,12 +7,18 @@ class ConversationSession:
         "1": "אנא הזן שם משתמש",
         "2": "אנא הזן סיסמא",
         "3": "תודה שפנית אלינו, פרטיך נקלטו במערכת, באיזה נושא נוכל להעניק לך שירות?",
-        "4": "בחר שירות",
-        "5": "אנא הזן קוד מוצר",
-        "6": "האם לחזור למספר הסלולרי?",
-        "7": "נא רשום בקצרה את תיאור הפנייה",
-        "8": "פנייתך התקבלה, נציג טלפוני יחזור אליך בהקדם.",
+        "4": "אנא הזן קוד מוצר",
+        "5": "האם לחזור למספר הסלולרי?",
+        "6": "נא רשום בקצרה את תיאור הפנייה",
+        "7": "פנייתך התקבלה, נציג טלפוני יחזור אליך בהקדם.",
     }
+    conversation_steps_response = {"1": "",
+                                   "2": "",
+                                   "3": "",
+                                   "4": "",
+                                   "5": "",
+                                   "6": ""
+                                   }
 
     def __init__(self, user_id):
         self.user_id = user_id
@@ -23,6 +30,7 @@ class ConversationSession:
 
     def increment_call_flow(self):
         self.call_flow_location += 1
+        print(f"call flow inc to: '{self.call_flow_location}'")
 
     def get_conversation_session_id(self):
         return self.user_id
@@ -38,12 +46,43 @@ class ConversationSession:
             return True
         return False
 
-    def all_validation(self, step):
-        # self.conversation_steps[self.call_flow_location]
+    def all_validation(self, step, answer):
+        match step:
+            case 1:
+                print(f"Check if user name '{answer}' valid")
+            case 2:
+                print(f"Check if password '{answer}' valid")
+                print(
+                    f"Search for user with user name '{self.conversation_steps_response['1']}' and password '{answer}'")
+            case 3:
+                print(f"check if chosen '{answer}' valid")
+                if answer not in ['ב', 'א']:
+                    return False
+            case 4:
+                print(f"Check if product '{answer}' exist")
+            case 5:
+                print(f"Check if phone number '{answer}' is valid")
+            case 6:
+                print(f"NO NEED TO VALIDATE ISSUE")
         return True
 
-    def set_response(self, step, response):
-        if self.all_validation(step):
-            print(self.conversation_steps[step],response)
+    def validate_and_set_answer(self, step, response):
+        step = int(step) - 1
+        if self.all_validation(step, response):
+            print(f"{self.conversation_steps[str(step)]}: {response}")
+            self.conversation_steps_response[str(step)] = response
+            result = f"{self.conversation_steps[str(step)]}: {response}"
+            return True, result
         else:
             print(f"Not valid response {response}")
+            result = f"Not valid response {response}"
+            return False, result
+
+    def set_status(self, status):
+        self.session_active = status
+
+    def get_chossies(self, step):
+        choices = ["ב", "א"]
+
+    def print_all_flow_call(self):
+        pprint(self.conversation_steps_response)

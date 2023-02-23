@@ -57,7 +57,7 @@ print([item.get_user_id() for item in conversation_history])
 
 @app.route("/")
 def whatsapp_echo():
-    return "WhatsApp bot server is ready1!"
+    return "WhatsApp bot server is ready2!"
 
 
 @app.route("/bot", methods=["POST", "GET"])
@@ -236,7 +236,7 @@ def chat_whatsapp(user_msg):
         steps_message = ""
         for key, value in conversation_steps.items():
             steps_message += f"{value} - {key}\n"
-            print(f"{value} - {key}")
+            # print(f"{value} - {key}")
         send_response_using_whatsapp_api(conversation["Greeting"])
         print(f"{steps_message}")
         session = ConversationSession(to)
@@ -244,32 +244,51 @@ def chat_whatsapp(user_msg):
         session.increment_call_flow()
         conversation_history.append(session)
     else:
-        if session.get_call_flow_location() == 8:
-            print(f"already END! please wait: '{TIMEOUT_FOR_OPEN_SESSION_MINUTES + 1}' minutes")
-            send_response_using_whatsapp_api(f" השירות יהיה זמין בעוד {TIMEOUT_FOR_OPEN_SESSION_MINUTES + 1} דקות ")
-            return
         print("Hi " + to + " You are known!:")
         current_conversation_step = str(session.get_call_flow_location())
-        if current_conversation_step == "3":
-            choices = ["ב", "א"]
-            # Get user input
-            send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n{choices}\n").lower()
+        print(f"Current step is: {current_conversation_step}")
+        is_valid, message = session.validate_and_set_answer(current_conversation_step, user_msg)
+        if is_valid:
+            if current_conversation_step == "3":
+                choices = ["ב", "א"]
+                send_response_using_whatsapp_api(
+                    f"{conversation_steps[current_conversation_step]}\n{choices}\n").lower()
+            else:
+                send_response_using_whatsapp_api(conversation_steps[current_conversation_step])
+            session.increment_call_flow()
+            next_step_conversation_after_increment = str(session.get_call_flow_location())
+            # Check if conversation reach to last step
+            if next_step_conversation_after_increment == str(len(conversation_steps) + 1):  # 7
+                session.issue_to_be_created = user_msg
+                send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n")
+                print(f"recevied message: '{session.issue_to_be_created}'")
+                print("Conversation ends!")
+                session.set_status(False)
+                session.print_all_flow_call()
+                return
         else:
-            send_response_using_whatsapp_api(conversation_steps[current_conversation_step])
-        session.set_response(current_conversation_step, user_msg)
-        session.increment_call_flow()
-        after_action_conversation_step = str(session.get_call_flow_location())
-        # Check if conversation reach to last step
-        if after_action_conversation_step == str(len(conversation_steps)+1):  # 7
-            session.issue_to_be_created = user_msg
-            send_response_using_whatsapp_api(f"{conversation_steps[after_action_conversation_step]}\n")
-            print(f"recevied message: '{session.issue_to_be_created}'")
-            print("Conversation ends!")
-            session.session_active = False
+            print("Try again")
+            send_response_using_whatsapp_api(message)
+            send_response_using_whatsapp_api(conversation_steps[str(int(current_conversation_step) - 1)])
             return
 
 
 def check_if_session_exist(user_id):
+    print(f"Check check_if_session_exist '{user_id}'")
+    session_index = None
+    # search for active session with user_id
+    for index, session in enumerate(conversation_history):
+        if session.user_id == user_id and session.session_active:
+            session_index = index
+            break
+
+    if session_index is not None:
+        print("SESSION exist!")
+        return conversation_history[session_index]
+    return None
+
+
+def check_if_session_exist_old_timeout(user_id):
     print(f"Check check_if_session_exist '{user_id}'")
     conversation_history_ids = [item.get_user_id() for item in conversation_history if item.session_active is True]
     if user_id in conversation_history_ids:
