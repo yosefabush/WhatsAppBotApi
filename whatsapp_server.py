@@ -65,7 +65,6 @@ def receive_message():
     """Receive a message using the WhatsApp Business API."""
     global to
     print(f"receive_message /bot trigger '{request}'")
-    print(f"method '{request.method}'")
     try:
         if request.method == "GET":
             print("Inside GET verify token!")
@@ -80,7 +79,7 @@ def receive_message():
                     return "", 403
         else:
             try:
-                print(f"webhook")
+                # print(f"webhook")
                 user_msg = webhook_parsing_message_and_destination()
                 if user_msg is None:
                     raise Exception("Read data from Whatsapp message failed")
@@ -103,14 +102,8 @@ def receive_message():
                     print(send_response_using_whatsapp_api("Unknown msg"))
             else:
                 chat_whatsapp(user_msg)
-                # if 'היי' in user_msg:
-                #     print(send_response_using_whatsapp_api("שלום רב!"))
-                # elif 'התחל' in user_msg:
-                #     chat_whatsapp(user_msg)
-                # else:
-                #     print(send_response_using_whatsapp_api("אני לומד להציק ללידור הגיי"))
-            return str("Done")
     except Exception as ex:
+        print(f"Exception {ex}")
         return f"Something went wrong : '{ex}'"
 
 
@@ -236,7 +229,7 @@ def chat_whatsapp(user_msg):
         steps_message = ""
         for key, value in conversation_steps.items():
             steps_message += f"{value} - {key}\n"
-            # print(f"{value} - {key}")
+
         send_response_using_whatsapp_api(conversation["Greeting"])
         print(f"{steps_message}")
         session = ConversationSession(to)
@@ -244,15 +237,15 @@ def chat_whatsapp(user_msg):
         session.increment_call_flow()
         conversation_history.append(session)
     else:
-        print("Hi " + to + " You are known!:")
         current_conversation_step = str(session.get_call_flow_location())
         print(f"Current step is: {current_conversation_step}")
-        is_valid, message = session.validate_and_set_answer(current_conversation_step, user_msg)
-        if is_valid:
+        is_answer_valid, message_in_error = session.validate_and_set_answer(current_conversation_step, user_msg)
+        if is_answer_valid:
+            if current_conversation_step == "2":
+                send_response_using_whatsapp_api("שלום " + session.conversation_steps_response["1"] + "!")
             if current_conversation_step == "3":
                 choices = ["ב", "א"]
-                send_response_using_whatsapp_api(
-                    f"{conversation_steps[current_conversation_step]}\n{choices}\n").lower()
+                send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n{choices}\n").lower()
             else:
                 send_response_using_whatsapp_api(conversation_steps[current_conversation_step])
             session.increment_call_flow()
@@ -260,16 +253,20 @@ def chat_whatsapp(user_msg):
             # Check if conversation reach to last step
             if next_step_conversation_after_increment == str(len(conversation_steps) + 1):  # 7
                 session.issue_to_be_created = user_msg
-                send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n")
-                print(f"recevied message: '{session.issue_to_be_created}'")
+                # send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n")
                 print("Conversation ends!")
                 session.set_status(False)
                 session.print_all_flow_call()
                 return
         else:
             print("Try again")
-            send_response_using_whatsapp_api(message)
-            send_response_using_whatsapp_api(conversation_steps[str(int(current_conversation_step) - 1)])
+            send_response_using_whatsapp_api(message_in_error)
+            fixed_step = str(int(current_conversation_step) - 1)
+            if fixed_step == "3":
+                choices = ["ב", "א"]
+                send_response_using_whatsapp_api(f"{conversation_steps[fixed_step]}\n{choices}\n").lower()
+            else:
+                send_response_using_whatsapp_api(conversation_steps[fixed_step])
             return
 
 
@@ -349,13 +346,13 @@ def send_response_using_whatsapp_api(message, phone_number=PHONE_NUMBER_ID_PROVI
 
 def webhook_parsing_message_and_destination():
     global to
-    print(request)
+    # print(request)
     res = request.get_json()
     print(res)
     try:
         if res['entry'][0]['changes'][0]['value']['messages'][0]['id']:
             to = res['entry'][0]['changes'][0]['value']['messages'][0]['from']
-            print("phone_number", res['entry'][0]['changes'][0]['value']['metadata']['phone_number_id'])
+            # print("phone_number", res['entry'][0]['changes'][0]['value']['metadata']['phone_number_id'])
             return res['entry'][0]['changes'][0]['value']['messages'][0]['text']["body"]
     except:
         pass
@@ -376,7 +373,7 @@ def receive_message_chat_whatsapp():
     """Receive a message using the WhatsApp Business API."""
     global to
     print(f"receive_message botTest trigger '{request}'")
-    print(f"method '{request.method}'")
+    # print(f"method '{request.method}'")
     try:
         if request.method == "GET":
             print("Inside receive message with verify token")

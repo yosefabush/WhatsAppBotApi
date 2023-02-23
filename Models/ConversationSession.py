@@ -97,7 +97,7 @@ class ConversationSession:
             return True, result
         else:
             print(f"Not valid response {response}")
-            result = f"Not valid response {response}"
+            result = f" ערך לא חוקי '{response}' "
             return False, result
 
     def set_status(self, status):
