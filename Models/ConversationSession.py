@@ -42,33 +42,55 @@ class ConversationSession:
         return self.call_flow_location
 
     def validate_user_input(self, user_input):
-        if self.all_validation(user_input):
+        if self.all_validation(self.call_flow_location, user_input):
             return True
         return False
 
-    def all_validation(self, step, answer):
-        match step:
-            case 1:
-                print(f"Check if user name '{answer}' valid")
-            case 2:
-                print(f"Check if password '{answer}' valid")
-                print(
-                    f"Search for user with user name '{self.conversation_steps_response['1']}' and password '{answer}'")
-            case 3:
-                print(f"check if chosen '{answer}' valid")
-                if answer not in ['ב', 'א']:
-                    return False
-            case 4:
-                print(f"Check if product '{answer}' exist")
-            case 5:
-                print(f"Check if phone number '{answer}' is valid")
-            case 6:
-                print(f"NO NEED TO VALIDATE ISSUE")
+    # def all_validation(self, step, answer):
+    #     match step:
+    #         case 1:
+    #             print(f"Check if user name '{answer}' valid")
+    #         case 2:
+    #             print(f"Check if password '{answer}' valid")
+    #             print(
+    #                 f"Search for user with user name '{self.conversation_steps_response['1']}' and password '{answer}'")
+    #         case 3:
+    #             print(f"check if chosen '{answer}' valid")
+    #             if answer not in ['ב', 'א']:
+    #                 return False
+    #         case 4:
+    #             print(f"Check if product '{answer}' exist")
+    #         case 5:
+    #             print(f"Check if phone number '{answer}' is valid")
+    #         case 6:
+    #             print(f"NO NEED TO VALIDATE ISSUE")
+    #     return True
+
+    def validation_switch_step(self, case, answer):
+        if case == 1:
+            print(f"Check if user name '{answer}' valid")
+        elif case == 2:
+            print(f"Check if password '{answer}' valid")
+            print(
+                f"Search for user with user name '{self.conversation_steps_response['1']}' and password '{answer}'")
+        elif case == 3:
+            print(f"check if chosen '{answer}' valid")
+            if answer not in ['ב', 'א']:
+                return False
+        elif case == 4:
+            print(f"Check if product '{answer}' exist")
+        elif case == 5:
+            print(f"Check if phone number '{answer}' is valid")
+        elif case == 6:
+            print(f"NO NEED TO VALIDATE ISSUE")
+        else:
+            return False
         return True
 
     def validate_and_set_answer(self, step, response):
         step = int(step) - 1
-        if self.all_validation(step, response):
+        # if self.all_validation(step, response):
+        if self.validation_switch_step(step, response):
             print(f"{self.conversation_steps[str(step)]}: {response}")
             self.conversation_steps_response[str(step)] = response
             result = f"{self.conversation_steps[str(step)]}: {response}"
