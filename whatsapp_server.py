@@ -102,6 +102,7 @@ def receive_message():
                     send_response_using_whatsapp_api("Unknown msg")
             else:
                 chat_whatsapp(user_msg)
+            return 'OK', 200
     except Exception as ex:
         print(f"receive_message Exception {ex}")
         return f"Something went wrong : '{ex}'"
