@@ -35,22 +35,14 @@ conversation = {
 }
 
 # Define a list of predefined conversation steps
-conversation_steps = {
-    "1": "אנא הזן שם משתמש",
-    "2": "אנא הזן סיסמא",
-    "3": "תודה שפנית אלינו, פרטיך נקלטו במערכת, באיזה נושא נוכל להעניק לך שירות?",
-    "4": "אנא הזן קוד מוצר",
-    "5": "האם לחזור למספר הסלולרי?",
-    "6": "נא רשום בקצרה את תיאור הפנייה",
-    "7": "פנייתך התקבלה, נציג טלפוני יחזור אליך בהקדם.",
-}
+conversation_steps = ConversationSession.conversation_steps_in_class
 
 conversation_history = list()
 for i in range(5):
     old_session = ConversationSession(f"1234{i}")
     conversation_history.append(old_session)
     if i == 3:
-        old_session.call_flow_location = 3
+        old_session.convers_step_resp[str(i)] = "test"
 
 print([item.get_user_id() for item in conversation_history])
 
@@ -163,11 +155,11 @@ def chat_input():
 
 def chat_whatsapp(user_msg):
     # Get the user's name
-    global conversation_history
     log = ""
     if user_msg in ["אדמין"]:
         for s in conversation_history:
-            log += str(s.conversation_steps_response)+" status: "+str(s.session_active) + "\n"
+            if not s.session_active:
+                log += f"ID: {s.user_id} Sent message: {s.issue_to_be_created}\n"
         send_response_using_whatsapp_api(log)
         return
     session = check_if_session_exist(to)
@@ -189,22 +181,22 @@ def chat_whatsapp(user_msg):
         is_answer_valid, message_in_error = session.validate_and_set_answer(current_conversation_step, user_msg)
         if is_answer_valid:
             if current_conversation_step == "2":
-                send_response_using_whatsapp_api("שלום " + session.conversation_steps_response["1"] + "!")
+                send_response_using_whatsapp_api("שלום " + session.convers_step_resp["1"] + "!")
             if current_conversation_step == "3":
                 choices = ["ב", "א"]
                 send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n{choices}\n")
             else:
                 send_response_using_whatsapp_api(conversation_steps[current_conversation_step])
-
             session.increment_call_flow()
             next_step_conversation_after_increment = str(session.get_call_flow_location())
             # Check if conversation reach to last step
             if next_step_conversation_after_increment == str(len(conversation_steps) + 1):  # 7
-                session.issue_to_be_created = user_msg
+                # session.validate_and_set_answer(current_conversation_step, user_msg)
+                # session.issue_to_be_created = user_msg
                 # send_response_using_whatsapp_api(f"{conversation_steps[current_conversation_step]}\n")
                 print("Conversation ends!")
                 session.set_status(False)
-                session.print_all_flow_call()
+                print(session.get_all_responses())
                 return
         else:
             print("Try again")

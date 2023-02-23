@@ -3,7 +3,7 @@ from pprint import pprint
 
 
 class ConversationSession:
-    conversation_steps = {
+    conversation_steps_in_class = {
         "1": "אנא הזן שם משתמש",
         "2": "אנא הזן סיסמא",
         "3": "תודה שפנית אלינו, פרטיך נקלטו במערכת, באיזה נושא נוכל להעניק לך שירות?",
@@ -12,13 +12,6 @@ class ConversationSession:
         "6": "נא רשום בקצרה את תיאור הפנייה",
         "7": "פנייתך התקבלה, נציג טלפוני יחזור אליך בהקדם.",
     }
-    conversation_steps_response = {"1": "",
-                                   "2": "",
-                                   "3": "",
-                                   "4": "",
-                                   "5": "",
-                                   "6": ""
-                                   }
 
     def __init__(self, user_id):
         self.user_id = user_id
@@ -27,6 +20,13 @@ class ConversationSession:
         self.issue_to_be_created = None
         self.start_data = datetime.now()
         self.session_active = True
+        self.convers_step_resp = {"1": "",
+                                  "2": "",
+                                  "3": "",
+                                  "4": "",
+                                  "5": "",
+                                  "6": ""
+                                  }
 
     def increment_call_flow(self):
         self.call_flow_location += 1
@@ -72,7 +72,7 @@ class ConversationSession:
         elif case == 2:
             print(f"Check if password '{answer}' valid")
             print(
-                f"Search for user with user name '{self.conversation_steps_response['1']}' and password '{answer}'")
+                f"Search for user with user name '{self.convers_step_resp['1']}' and password '{answer}'")
         elif case == 3:
             print(f"check if chosen '{answer}' valid")
             if answer not in ['ב', 'א']:
@@ -83,6 +83,7 @@ class ConversationSession:
             print(f"Check if phone number '{answer}' is valid")
         elif case == 6:
             print(f"NO NEED TO VALIDATE ISSUE")
+            self.issue_to_be_created = answer
         else:
             return False
         return True
@@ -91,9 +92,9 @@ class ConversationSession:
         step = int(step) - 1
         # if self.all_validation(step, response):
         if self.validation_switch_step(step, response):
-            print(f"{self.conversation_steps[str(step)]}: {response}")
-            self.conversation_steps_response[str(step)] = response
-            result = f"{self.conversation_steps[str(step)]}: {response}"
+            print(f"{self.conversation_steps_in_class[str(step)]}: {response}")
+            self.convers_step_resp[str(step)] = response
+            result = f"{self.conversation_steps_in_class[str(step)]}: {response}"
             return True, result
         else:
             print(f"Not valid response {response}")
@@ -106,5 +107,5 @@ class ConversationSession:
     def get_chossies(self, step):
         choices = ["ב", "א"]
 
-    def print_all_flow_call(self):
-        pprint(self.conversation_steps_response)
+    def get_all_responses(self):
+        return self.convers_step_resp
